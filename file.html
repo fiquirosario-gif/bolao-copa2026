@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>🏆 Bolão da Família – Copa 2026</title>
+<script src="https://sdk.mercadopago.com/js/v2"></script>
+<style>
+  :root {
+    --verde: #009c3b;
+    --amarelo: #ffdf00;
+    --azul: #002776;
+    --branco: #ffffff;
+    --cinza: #f4f4f4;
+    --danger: #e74c3c;
+    --sombra: 0 4px 20px rgba(0,0,0,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+  body { background: var(--azul); min-height: 100vh; }
+  header {
+    background: linear-gradient(135deg, var(--verde), var(--azul));
+    color: white; text-align: center; padding: 24px 16px 16px;
+  }
+  header h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: 1px; }
+  header p { font-size: 0.85rem; opacity: 0.85; margin-top: 4px; }
+  .badge-premio {
+    display: inline-block; background: var(--amarelo); color: var(--azul);
+    font-weight: 800; font-size: 1.1rem; padding: 6px 20px;
+    border-radius: 30px; margin-top: 10px;
+  }
+  nav {
+    display: flex; justify-content: center; gap: 8px;
+    background: var(--azul); padding: 10px; flex-wrap: wrap;
+  }
+  nav button {
+    background: transparent; border: 2px solid var(--amarelo);
+    color: var(--amarelo); padding: 7px 16px; border-radius: 20px;
+    font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: all .2s;
+  }
+  nav button.active, nav button:hover { background: var(--amarelo); color: var(--azul); }
+  main { max-width: 780px; margin: 0 auto; padding: 16px; }
+  .card {
+    background: white; border-radius: 16px; padding: 20px;
+    margin-bottom: 16px; box-shadow: var(--sombra);
+  }
+  .card h2 {
+    color: var(--azul); font-size: 1.1rem; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 3px solid var(--amarelo); padding-bottom: 8px;
+  }
+  .section { display: none; }
+  .section.active { display: block; }
+  .jogo-card {
+    border: 2px solid var(--cinza); border-radius: 12px;
+    padding: 14px; margin-bottom: 12px; transition: border .2s;
+  }
+  .jogo-card.aberto { border-color: var(--verde); }
+  .jogo-card.encerrado { border-color: #ccc; opacity: .7; }
+  .jogo-card.acumulado { border-color: var(--amarelo); background: #fffde7; }
+  .jogo-header {
+    display: flex; justify-content: space-between;
+    align-items: center; flex-wrap: wrap; gap: 8px;
+  }
+  .jogo-times { font-size: 1.1rem; font-weight: 800; color: var(--azul); }
+  .jogo-info { font-size: 0.78rem; color: #666; }
+  .jogo-status {
+    font-size: 0.75rem; font-weight: 700;
+    padding: 4px 10px; border-radius: 20px;
+  }
+  .status-aberto { background: #e8f5e9; color: var(--verde); }
+  .status-encerrado { background: #eee; color: #999; }
+  .status-acumulado { background: #fff9c4; color: #f57f17; }
+  .premio-jogo { margin-top: 8px; font-size: 0.85rem; color: var(--verde); font-weight: 700; }
+  .palpite-form { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+  .palpite-form input, .palpite-form select {
+    padding: 10px 14px; border: 2px solid #ddd; border-radius: 10px;
+    font-size: 0.95rem; outline: none; transition: border .2s;
+  }
+  .palpite-form input:focus, .palpite-form select:focus { border-color: var(--verde); }
+  .placar-row { display: flex; align-items: center; gap: 10px; }
+  .placar-row input { width: 60px; text-align: center; font-size: 1.2rem; font-weight: 700; }
+  .placar-row span { font-weight: 800; font-size: 1.2rem; color: var(--azul); }
+  .btn {
+    padding: 12px 24px; border: none; border-radius: 10px;
+    font-weight: 700; font-size: 0.95rem; cursor: pointer;
+    transition: transform .1s, opacity .2s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-verde { background: var(--verde); color: white; }
+  .btn-amarelo { background: var(--amarelo); color: var(--azul); }
+  .btn-azul { background: var(--azul); color: white; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-block { width: 100%; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .ranking-row {
+    display: flex; align-items: center; padding: 10px 14px;
+    border-radius: 10px; margin-bottom: 8px; background: var(--cinza); gap: 12px;
+  }
+  .ranking-pos { font-size: 1.3rem; min-width: 32px; text-align: center; }
+  .ranking-nome { flex: 1; font-weight: 700; color: var(--azul); }
+  .ranking-pts { font-weight: 800; color: var(--verde); font-size: 1.1rem; }
+  .ranking-row.primeiro { background: linear-gradient(90deg,#fff9c4,#fffde7); border: 2px solid var(--amarelo); }
+  .ranking-row.segundo { background: #f5f5f5; }
+  .ranking-row.terceiro { background: #fbe9e7; }
+  .pix-box {
+    background: #e8f5e9; border: 2px dashed var(--verde);
+    border-radius: 12px; padding: 16px; text-align: center; margin-top: 12px;
+  }
+  .pix-codigo {
+    font-family: monospace; font-size: 0.8rem; word-break: break-all;
+    background: white; padding: 10px; border-radius: 8px;
+    margin: 10px 0; border: 1px solid #ccc;
+  }
+  .pix-qr { max-width: 200px; margin: 0 auto; display: block; border-radius: 8px; }
+  .participante-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; background: var(--cinza); border-radius: 10px; margin-bottom: 8px;
+  }
+  .participante-nome { font-weight: 700; color: var(--azul); }
+  .badge-pago { background: #e8f5e9; color: var(--verde); font-size: 0.75rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+  .badge-pendente { background: #fff3e0; color: #e65100; font-size: 0.75rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+  .badge-admin { background: var(--azul); color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; }
+  .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media(max-width:480px){ .admin-grid { grid-template-columns: 1fr; } }
+  .admin-card {
+    background: var(--cinza); border-radius: 12px; padding: 14px;
+    text-align: center; cursor: pointer; transition: background .2s;
+  }
+  .admin-card:hover { background: #e0e0e0; }
+  .admin-card .icon { font-size: 2rem; }
+  .admin-card p { font-size: 0.85rem; font-weight: 700; color: var(--azul); margin-top: 6px; }
+  #toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--azul); color: white; padding: 12px 24px;
+    border-radius: 30px; font-weight: 700; font-size: 0.9rem;
+    z-index: 9999; opacity: 0; transition: opacity .3s; pointer-events: none;
+  }
+  #toast.show { opacity: 1; }
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6); z-index: 1000;
+    justify-content: center; align-items: center; padding: 16px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: white; border-radius: 16px; padding: 24px;
+    width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto;
+  }
+  .modal-box h3 { color: var(--azul); font-size: 1.1rem; margin-bottom: 16px; border-bottom: 3px solid var(--amarelo); padding-bottom: 8px; }
+  .modal-close { float: right; background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #999; margin-top: -4px; }
+  #tela-login {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; min-height: 100vh; padding: 24px;
+    background: linear-gradient(135deg, var(--azul), var(--verde));
+  }
+  .login-card {
+    background: white; border-radius: 20px; padding: 32px 24px;
+    width: 100%; max-width: 380px; box-shadow: var(--sombra); text-align: center;
+  }
+  .login-card h2 { color: var(--azul); font-size: 1.5rem; margin-bottom: 6px; }
+  .login-card p { color: #666; font-size: 0.85rem; margin-bottom: 20px; }
+  .login-card input {
+    width: 100%; padding: 12px 16px; border: 2px solid #ddd;
+    border-radius: 10px; font-size: 0.95rem; margin-bottom: 12px; outline: none;
+  }
+  .login-card input:focus { border-color: var(--verde); }
+  .emoji-brasil { font-size: 3rem; margin-bottom: 10px; }
+  .vagas-bar { background: #eee; border-radius: 30px; height: 10px; overflow: hidden; margin-top: 6px; }
+  .vagas-fill {
+    background: linear-gradient(90deg, var(--verde), var(--amarelo));
+    height: 100%; border-radius: 30px; transition: width .4s;
+  }
+  .tabs-jogos {
+    display: flex; gap: 8px; overflow-x: auto;
+    padding-bottom: 4px; margin-bottom: 16px;
+  }
+  .tab-jogo {
+    white-space: nowrap; padding: 7px 14px; border-radius: 20px;
+    border: 2px solid var(--verde); background: white; color: var(--verde);
+    font-weight: 700; font-size: 0.78rem; cursor: pointer;
+  }
+  .tab-jogo.active { background: var(--verde); color: white; }
+  .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 0.88rem; }
+  .info-row:last-child { border: none; }
+  .info-label { color: #888; }
+  .info-value { font-weight: 700; color: var(--azul); }
+</style>
+</head>
+<body>
+
+<!-- TELA LOGIN -->
+<div id="tela-login">
+  <div class="login-card">
+    <div class="emoji-brasil">🇧🇷</div>
+    <h2>Bolão da Família</h2>
+    <p>Copa do Mundo 2026 · Grupo C</p>
+    <input type="text" id="login-nome" placeholder="Seu nome completo" maxlength="30"/>
+    <input type="tel" id="login-tel" placeholder="Seu WhatsApp (ex: 75912345678)" maxlength="15"/>
+    <input type="password" id="login-senha" placeholder="Senha" maxlength="20"/>
+    <button class="btn btn-verde btn-block" onclick="fazerLogin()">Entrar no Bolão →</button>
+    <p style="margin-top:12px;font-size:0.75rem;color:#aaa">Admin? Use a senha secreta configurada.</p>
+  </div>
+</div>
+
+<!-- APP PRINCIPAL -->
+<div id="app" style="display:none">
+  <header>
+    <h1>🏆 Bolão da Família – Copa 2026</h1>
+    <p id="header-usuario">Olá, participante!</p>
+    <div class="badge-premio" id="badge-premio-total">💰 Prêmio acumulado: R$ 0,00</div>
+  </header>
+  <nav>
+    <button class="active" onclick="trocarSecao('jogos',this)">⚽ Jogos</button>
+    <button onclick="trocarSecao('palpites',this)">🎯 Palpites</button>
+    <button onclick="trocarSecao('ranking',this)">📊 Ranking</button>
+    <button onclick="trocarSecao('pagamento',this)">💳 Pagar</button>
+    <button onclick="trocarSecao('participantes',this)">👥 Turma</button>
+    <button onclick="trocarSecao('admin',this)" id="btn-admin" style="display:none">🔧 Admin</button>
+  </nav>
+  <main>
+
+    <!-- JOGOS -->
+    <div id="sec-jogos" class="section active">
+      <div class="card">
+        <h2>⚽ Jogos do Brasil – Grupo C</h2>
+        <div id="lista-jogos"></div>
+      </div>
+      <div class="card">
+        <h2>📌 Regras</h2>
+        <div class="info-row"><span class="info-label">Valor por participante</span><span class="info-value">R$ 10,00</span></div>
+        <div class="info-row"><span class="info-label">Máx. participantes</span><span class="info-value">15 pessoas</span></div>
+        <div class="info-row"><span class="info-label">Placar exato</span><span class="info-value">3 pontos</span></div>
+        <div class="info-row"><span class="info-label">Acertou vencedor/empate</span><span class="info-value">1 ponto</span></div>
+        <div class="info-row"><span class="info-label">Errou tudo</span><span class="info-value">0 pontos</span></div>
+        <div class="info-row"><span class="info-label">Sem vencedor no jogo</span><span class="info-value">Acumula pro próximo ✅</span></div>
+      </div>
+    </div>
+
+    <!-- PALPITES -->
+    <div id="sec-palpites" class="section">
+      <div class="card">
+        <h2>🎯 Registrar Palpite</h2>
+        <div class="tabs-jogos" id="tabs-jogos-palpite"></div>
+        <div id="form-palpite-container"></div>
+      </div>
+      <div class="card">
+        <h2>📋 Meus Palpites</h2>
+        <div id="meus-palpites"></div>
+      </div>
+    </div>
+
+    <!-- RANKING -->
+    <div id="sec-ranking" class="section">
+      <div class="card">
+        <h2>📊 Ranking Geral</h2>
+        <div id="lista-ranking"></div>
+      </div>
+      <div class="card">
+        <h2>🗳️ Todos os Palpites</h2>
+        <div id="todos-palpites"></div>
+      </div>
+    </div>
+
+    <!-- PAGAMENTO -->
+    <div id="sec-pagamento" class="section">
+      <div class="card">
+        <h2>💳 Pagamento via Pix</h2>
+        <div class="info-row"><span class="info-label">Valor</span><span class="info-value">R$ 10,00</span></div>
+        <div class="info-row"><span class="info-label">Status</span><span class="info-value" id="status-pagamento-usuario">Verificando...</span></div>
+        <div id="area-pagamento"></div>
+      </div>
+    </div>
+
+    <!-- PARTICIPANTES -->
+    <div id="sec-participantes" class="section">
+      <div class="card">
+        <h2>👥 Participantes</h2>
+        <div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px">
+            <span id="vagas-texto">0/15 participantes</span>
+            <span id="vagas-livres" style="color:var(--verde);font-weight:700"></span>
+          </div>
+          <div class="vagas-bar"><div class="vagas-fill" id="vagas-fill" style="width:0%"></div></div>
+        </div>
+        <div id="lista-participantes"></div>
+      </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div id="sec-admin" class="section">
+      <div class="card">
+        <h2>🔧 Painel Administrativo</h2>
+        <div class="admin-grid">
+          <div class="admin-card" onclick="abrirModalResultado()"><div class="icon">⚽</div><p>Registrar Resultado</p></div>
+          <div class="admin-card" onclick="abrirModalConfirmarPagamento()"><div class="icon">✅</div><p>Confirmar Pagamento</p></div>
+          <div class="admin-card" onclick="abrirModalAdicionarParticipante()"><div class="icon">➕</div><p>Adicionar Participante</p></div>
+          <div class="admin-card" onclick="trocarSecao('ranking',document.querySelector('nav button:nth-child(3)'))"><div class="icon">📋</div><p>Ver Todos os Palpites</p></div>
+          <div class="admin-card" onclick="abrirModalConfig()"><div class="icon">⚙️</div><p>Configurar Pix/MP</p></div>
+          <div class="admin-card" onclick="exportarDados()"><div class="icon">📤</div><p>Exportar Dados</p></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>💰 Resumo Financeiro</h2>
+        <div id="resumo-financeiro"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- MODAL RESULTADO -->
+<div class="modal-overlay" id="modal-resultado">
+  <div class="modal-box">
+    <button class="modal-close" onclick="fecharModal('modal-resultado')">✕</button>
+    <h3>⚽ Registrar Resultado</h3>
+    <select id="select-jogo-resultado" style="width:100%;padding:10px;border-radius:8px;border:2px solid #ddd;margin-bottom:12px"></select>
+    <p style="font-size:0.85rem;color:#666;margin-bottom:8px">Placar final:</p>
+    <div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:16px">
+      <input type="number" id="gol-casa" min="0" max="20" value="0" style="width:70px;padding:10px;border-radius:8px;border:2px solid #ddd;text-align:center;font-size:1.3rem"/>
+      <span style="font-size:1.4rem;font-weight:800">x</span>
+      <input type="number" id="gol-fora" min="0" max="20" value="0" style="width:70px;padding:10px;border-radius:8px;border:2px solid #ddd;text-align:center;font-size:1.3rem"/>
+    </div>
+    <button class="btn btn-verde btn-block" onclick="registrarResultado()">Salvar e Calcular Pontos</button>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAR PAGAMENTO -->
+<div class="modal-overlay" id="modal-confirmar-pag">
+  <div class="modal-box">
+    <button class="modal-close" onclick="fecharModal('modal-confirmar-pag')">✕</button>
+    <h3>✅ Confirmar Pagamento</h3>
+    <div id="lista-confirmar-pag"></div>
+  </div>
+</div>
+
+<!-- MODAL ADD PARTICIPANTE -->
+<div class="modal-overlay" id="modal-add-participante">
+  <div class="modal-box">
+    <button class="modal-close" onclick="fecharModal('modal-add-participante')">✕</button>
+    <h3>➕ Adicionar Participante</h3>
+    <input type="text" id="add-nome" placeholder="Nome completo" style="width:100%;padding:10px;border-radius:8px;border:2px solid #ddd;margin-bottom:10px"/>
+    <input type="tel" id="add-tel" placeholder="WhatsApp" style="width:100%;padding:10px;border-radius:8px;border:2px solid #ddd;margin-bottom:10px"/>
+    <input type="password" id="add-senha" placeholder="Senha do participante" style="width:100%;padding:10px;border-radius:8px;border:2px solid #ddd;margin-bottom:10px"/>
+    <button class="btn btn-verde btn-block" onclick="adicionarParticipante()">Adicionar</button>
+  </div>
+</div>
+
+<!-- MODAL CONFIG PIX -->
+<div class="modal-overlay" id="modal-config">
+  <div class="modal-box">
+    <button class="modal-close" onclick="fecharModal('modal-config')">✕</button>
+    <h3>⚙️ Configurações Pix / Mercado Pago</h3>
+    <label style="font-size:0.82rem;font-weight:700;color:#666">Public Key (Mercado Pago)</label>
+    <input type="text" id="cfg-public-key" placeholder="APP_USR-..." style="width:100%;padding:10px;border-radius:8px;border:2px solid #ddd;margin-bottom:10px;margin-top:4px"/>
+    <label style="font-size:0.82rem;font-weight:700;color:#666">Access Token (Mercado Pago)</label>
+    <input type="password" id="cfg-access-token" placeholder="APP_USR-..." style="width:100%;padding:10px;border-radius:8px;border:2px solid #ddd;margin-bottom:10px;margin-top:4px"/>
+    <label style="font-size:0.82rem;font-weight:700;color:#666">Chave Pix Manual</label>
+    <input type="text" id="cfg-chave-pix" placeholder="CPF, e-mail ou telefone" style="width:100%;padding:10px;border-radius:8px;border:2px solid #ddd;margin-bottom:10px;margin-top:4px"/>
+    <label style="font-size:0.82rem;font-weight:700;color:#666">Nome do Recebedor</label>
+    <input type="text" id="cfg-nome-pix" placeholder="Seu nome" style="width:100%;padding:10px;border-radius:8px;border:2px solid #ddd;margin-bottom:10px;margin-top:4px"/>
+    <label style="font-size:0.82rem;font-weight:700;color:#666">Senha do Admin</label>
+    <input type="password" id="cfg-senha-admin" placeholder="Mínimo 4 caracteres" style="width:100%;padding:10px;border-radius:8px;border:2px solid #ddd;margin-bottom:16px;margin-top:4px"/>
+    <button class="btn btn-azul btn-block" onclick="salvarConfig()">💾 Salvar</button>
+  </div>
+</div>
+
+<!-- MODAL PIX GERADO -->
+<div class="modal-overlay" id="modal-pix">
+  <div class="modal-box" style="text-align:center">
+    <button class="modal-close" onclick="fecharModal('modal-pix')">✕</button>
+    <h3>💚 Pagamento via Pix</h3>
+    <p style="font-size:0.88rem;color:#666;margin-bottom:12px">Escaneie o QR Code ou copie o código</p>
+    <img id="pix-qr-img" class="pix-qr" src="" alt="QR Code Pix" style="margin-bottom:12px"/>
+    <div class="pix-codigo" id="pix-codigo-texto"></div>
+    <button class="btn btn-verde btn-block" onclick="copiarPix()">📋 Copiar Código Pix</button>
+    <p style="font-size:0.75rem;color:#aaa;margin-top:10px" id="pix-instrucao"></p>
+  </div>
+</div>
+
+<script>
+// ── CONSTANTES ──────────────────────────────────────────────
+const VALOR_BOLAO      = 10.00;
+const MAX_PARTICIPANTES = 15;
+
+// ── ESTADO GLOBAL ───────────────────────────────────────────
+let estado = {
+  config: {
+    publicKeyMP:  '',
+    accessTokenMP:'',
+    chavePix:     'fiquiquintela@gmail.com',   // ← SUA CHAVE PIX
+    nomePix:      'Filipe Quintela',            // ← SEU NOME
+    senhaAdmin:   'admin2026'
+  },
+  participantes: [],
+  jogos: [
+    { id:1, mandante:'Brasil 🇧🇷', visitante:'Marrocos 🇲🇦',
+      data:'13/06/2026', hora:'19h00', local:'MetLife Stadium – NY/NJ',
+      status:'aberto', resultado:null, premioProprio:0, acumulado:false },
+    { id:2, mandante:'Brasil 🇧🇷', visitante:'Haiti 🇭🇹',
+      data:'19/06/2026', hora:'21h30', local:'Lincoln Financial Field – Filadélfia',
+      status:'aberto', resultado:null, premioProprio:0, acumulado:false },
+    { id:3, mandante:'Escócia 🏴󠁧󠁢󠁳󠁣󠁴󠁿', visitante:'Brasil 🇧🇷',
+      data:'24/06/2026', hora:'19h00', local:'Hard Rock Stadium – Miami',
+      status:'aberto', resultado:null, premioProprio:0, acumulado:false }
+  ],
+  palpites:    [],
+  pagamentos:  [],
+  usuarioAtual:null
+};
+
+// ── PERSISTÊNCIA ────────────────────────────────────────────
+function salvarEstado() {
+  localStorage.setItem('bolao_copa2026', JSON.stringify(estado));
+}
+function carregarEstado() {
+  const s = localStorage.getItem('bolao_copa2026');
+  if (s) {
+    const sv = JSON.parse(s);
+    estado.config         = sv.config         || estado.config;
+    estado.participantes  = sv.participantes   || [];
+    estado.jogos          = sv.jogos           || estado.jogos;
+    estado.palpites       = sv.palpites        || [];
+    estado.pagamentos     = sv.pagamentos      || [];
+    estado.usuarioAtual   = null;
+  }
+  // Garante chave pix padrão se vier vazio do storage
+  if (!estado.config.chavePix) estado.config.chavePix = 'fiquiquintela@gmail.com';
+  if (!estado.config.nomePix)  estado.config.nomePix  = 'Filipe Quintela';
+  recalcularPremios();
+}
+
+// Prêmio = R$10 × participantes pagos ÷ 3 jogos (acumulativo gerido pelo admin)
+function recalcularPremios() {
+  const pagos = estado.participantes.filter(p => p.pago).length;
+  const totalArrecadado = pagos * VALOR_BOLAO;
+  // Distribui valor base para jogos ainda não encerrados
+  const abertos = estado.jogos.filter(j => j.status === 'aberto');
+  if (abertos.length === 0) return;
+  // Mantém acumulado já existente, apenas recalcula premioProprio do 1º aberto
+  // se ele for 0 (estado inicial)
+  if (abertos[0].premioProprio === 0 && totalArrecadado > 0) {
+    abertos[0].premioProprio = totalArrecadado;
+  }
+}
+
+// ── LOGIN ───────────────────────────────────────────────────
+function fazerLogin() {
+  const nome  = document.getElementById('login-nome').value.trim();
+  const tel   = document.getElementById('login-tel').value.trim();
+  const senha = document.getElementById('login-senha').value.trim();
+  if (!nome || !senha) { toast('⚠️ Preencha nome e senha!'); return; }
+
+  // Admin
+  if (senha === estado.config.senhaAdmin) {
+    let adm = estado.participantes.find(p => p.nome.toLowerCase() === nome.toLowerCase());
+    if (!adm) {
+      if (estado.participantes.length >= MAX_PARTICIPANTES) { toast('❌ Bolão cheio!'); return; }
+      adm = { id:gerarId(), nome, tel, senha, pago:true, pontos:0, isAdmin:true };
+      estado.participantes.push(adm);
+      salvarEstado();
+    }
+    adm.isAdmin = true;
+    estado.usuarioAtual = adm;
+    iniciarApp(); return;
+  }
+
+  // Participante existente
+  let user = estado.participantes.find(p =>
+    p.nome.toLowerCase() === nome.toLowerCase() && p.senha === senha);
+  if (user) { estado.usuarioAtual = user; iniciarApp(); return; }
+
+  // Novo participante
+  if (estado.participantes.length >= MAX_PARTICIPANTES) {
+    toast('❌ Bolão lotado! Máximo de 15 participantes atingido.'); return;
+  }
+  const novo = { id:gerarId(), nome, tel, senha, pago:false, pontos:0, isAdmin:false };
+  estado.participantes.push(novo);
+  estado.usuarioAtual = novo;
+  salvarEstado();
+  toast('✅ Bem-vindo(a), ' + nome + '!');
+  iniciarApp();
+}
+
+function iniciarApp() {
+  document.getElementById('tela-login').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  const u = estado.usuarioAtual;
+  document.getElementById('header-usuario').textContent =
+    `Olá, ${u.nome}!${u.isAdmin ? ' 👑 Admin' : ''}`;
+  if (u.isAdmin) document.getElementById('btn-admin').style.display = 'inline-block';
+  renderTudo();
+}
+
+// ── NAVEGAÇÃO ───────────────────────────────────────────────
+function trocarSecao(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (id==='ranking')      renderRanking();
+  if (id==='participantes') renderParticipantes();
+  if (id==='pagamento')    renderPagamento();
+  if (id==='palpites')     renderPalpites();
+  if (id==='admin')        renderAdmin();
+}
+
+// ── RENDER GERAL ────────────────────────────────────────────
+function renderTudo() {
+  renderJogos();
+  renderPremioTotal();
+  renderParticipantes();
+  renderRanking();
+  renderPalpites();
+  renderPagamento();
+}
+
+// ── JOGOS ───────────────────────────────────────────────────
+function renderJogos() {
+  const el = document.getElementById('lista-jogos');
+  el.innerHTML = '';
+  estado.jogos.forEach(j => {
+    const cls    = j.status==='encerrado' ? 'encerrado' : (j.acumulado ? 'acumulado' : 'aberto');
+    const label  = j.status==='encerrado' ? 'Encerrado'  : (j.acumulado ? '🔥 Acumulado!' : '🟢 Aberto');
+    const badge  = j.status==='encerrado' ? 'status-encerrado' : (j.acumulado ? 'status-acumulado' : 'status-aberto');
+    const resHtml = j.resultado
+      ? `<div style="margin-top:8px;text-align:center;font-size:1.3rem;font-weight:800;color:var(--verde)">${j.resultado.casa} x ${j.resultado.fora}</div>` : '';
+    el.innerHTML += `
+      <div class="jogo-card ${cls}">
+        <div class="jogo-header">
+          <div>
+            <div class="jogo-times">${j.mandante} vs ${j.visitante}</div>
+            <div class="jogo-info">📅 ${j.data} · ⏰ ${j.hora} · 📍 ${j.local}</div>
+          </div>
+          <span class="jogo-status ${badge}">${label}</span>
+        </div>
+        ${resHtml}
+        <div class="premio-jogo">💰 Prêmio: R$ ${j.premioProprio.toFixed(2).replace('.',',')}</div>
+      </div>`;
+  });
+}
+
+function renderPremioTotal() {
+  const total = estado.jogos.reduce((s,j) => s + j.premioProprio, 0);
+  document.getElementById('badge-premio-total').textContent =
+    `💰 Prêmio acumulado: R$ ${total.toFixed(2).replace('.',',')}`;
+}
+
+// ── PALPITES ────────────────────────────────────────────────
+let jogoSelecionadoPalpite = 1;
+
+function renderPalpites() {
+  const tabs = document.getElementById('tabs-jogos-palpite');
+  const form = document.getElementById('form-palpite-container');
+  tabs.innerHTML = '';
+  estado.jogos.forEach(j => {
+    const btn = document.createElement('button');
+    btn.className = 'tab-jogo' + (j.id === jogoSelecionadoPalpite ? ' active' : '');
+    btn.textContent = `Jogo ${j.id}`;
+    btn.onclick = () => { jogoSelecionadoPalpite = j.id; renderPalpites(); };
+    tabs.appendChild(btn);
+  });
+
+  const jogo = estado.jogos.find(j => j.id === jogoSelecionadoPalpite);
+  const u    = estado.usuarioAtual;
+  const ja   = estado.palpites.find(p => p.participanteId===u.id && p.jogoId===jogo.id);
+
+  if (!u.pago) {
+    form.innerHTML = `<div style="background:#fff3e0;border-radius:10px;padding:14px;color:#e65100;font-weight:700;text-align:center">
+      ⚠️ Você precisa pagar para enviar palpites!<br>
+      <button class="btn btn-amarelo" style="margin-top:10px"
+        onclick="trocarSecao('pagamento',document.querySelector('nav button:nth-child(4)'))">
+        💳 Ir para Pagamento</button></div>`;
+  } else if (jogo.status === 'encerrado') {
+    form.innerHTML = `<p style="color:#aaa;text-align:center;padding:12px">Este jogo já foi encerrado.</p>`;
+  } else if (ja) {
+    form.innerHTML = `
+      <div style="background:#e8f5e9;border-radius:10px;padding:14px;text-align:center">
+        <p style="font-weight:700;color:var(--verde)">✅ Palpite registrado!</p>
+        <p style="font-size:1.4rem;font-weight:800;color:var(--azul);margin-top:6px">${ja.golCasa} x ${ja.golFora}</p>
+        <p style="font-size:0.8rem;color:#888;margin-top:4px">${jogo.mandante} vs ${jogo.visitante}</p>
+        <button class="btn btn-danger" style="margin-top:10px;font-size:0.8rem;padding:8px 16px"
+          onclick="removerPalpite(${jogo.id})">✏️ Alterar Palpite</button>
+      </div>`;
+  } else {
+    form.innerHTML = `
+      <p style="font-size:0.88rem;color:#666;margin-bottom:12px">
+        Qual será o placar de <strong>${jogo.mandante} vs ${jogo.visitante}</strong>?</p>
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px">
+        <div style="text-align:center">
+          <div style="font-size:0.7rem;color:#888;margin-bottom:4px">${jogo.mandante}</div>
+          <input type="number" id="p-gol-casa" min="0" max="20" value="0"
+            style="width:65px;padding:10px;border:2px solid #ddd;border-radius:10px;font-size:1.3rem;font-weight:700;text-align:center"/>
+        </div>
+        <span style="font-size:1.5rem;font-weight:800;color:var(--azul)">X</span>
+        <div style="text-align:center">
+          <div style="font-size:0.7rem;color:#888;margin-bottom:4px">${jogo.visitante}</div>
+          <input type="number" id="p-gol-fora" min="0" max="20" value="0"
+            style="width:65px;padding:10px;border:2px solid #ddd;border-radius:10px;font-size:1.3rem;font-weight:700;text-align:center"/>
+        </div>
+      </div>
+      <button class="btn btn-verde btn-block" onclick="enviarPalpite(${jogo.id})">🎯 Enviar Palpite</button>`;
+  }
+
+  // Meus palpites
+  const mp = document.getElementById('meus-palpites');
+  const lista = estado.palpites.filter(p => p.participanteId === u.id);
+  mp.innerHTML = lista.length === 0
+    ? `<p style="color:#aaa;text-align:center">Nenhum palpite registrado ainda.</p>`
+    : lista.map(p => {
+        const j   = estado.jogos.find(x => x.id === p.jogoId);
+        const pts = calcularPontos(p, j);
+        const cor = pts===3?'var(--verde)':pts===1?'#f57f17':'#e74c3c';
+        return `<div class="participante-row">
+          <div>
+            <div style="font-weight:700;color:var(--azul)">${j.mandante} vs ${j.visitante}</div>
+            <div style="font-size:0.8rem;color:#888">${j.data}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:1.1rem;font-weight:800;color:var(--azul)">${p.golCasa} x ${p.golFora}</div>
+            ${j.resultado
+              ? `<div style="font-size:0.78rem;font-weight:700;color:${cor}">${pts} pt${pts!==1?'s':''}</div>`
+              : '<div style="font-size:0.75rem;color:#aaa">Aguardando resultado</div>'}
+          </div>
+        </div>`;
+      }).join('');
+}
+
+function enviarPalpite(jogoId) {
+  const gc = parseInt(document.getElementById('p-gol-casa').value);
+  const gf = parseInt(document.getElementById('p-gol-fora').value);
+  if (isNaN(gc)||isNaN(gf)||gc<0||gf<0) { toast('⚠️ Placar inválido!'); return; }
+  estado.palpites.push({
+    participanteId: estado.usuarioAtual.id,
+    jogoId, golCasa: gc, golFora: gf, timestamp: Date.now()
+  });
+  salvarEstado(); toast('🎯 Palpite salvo!'); renderPalpites();
+}
+
+function removerPalpite(jogoId) {
+  estado.palpites = estado.palpites.filter(p =>
+    !(p.participanteId === estado.usuarioAtual.id && p.jogoId === jogoId));
+  salvarEstado(); renderPalpites();
+}
+
+function calcularPontos(palpite, jogo) {
+  if (!jogo.resultado) return 0;
+  const r = jogo.resultado;
+  if (palpite.golCasa===r.casa && palpite.golFora===r.fora) return 3;
+  const vR = r.casa>r.fora?'c':r.fora>r.casa?'f':'e';
+  const vP = palpite.golCasa>palpite.golFora?'c':palpite.golFora>palpite.golCasa?'f':'e';
+  return vR===vP ? 1 : 0;
+}
+
+// ── RANKING ─────────────────────────────────────────────────
+function renderRanking() {
+  estado.participantes.forEach(p => {
+    p.pontos = estado.palpites
+      .filter(x => x.participanteId === p.id)
+      .reduce((s,x) => s + calcularPontos(x, estado.jogos.find(g => g.id===x.jogoId)), 0);
+  });
+  const ord = [...estado.participantes].sort((a,b) => b.pontos - a.pontos);
+  const el  = document.getElementById('lista-ranking');
+  if (!ord.length) { el.innerHTML=`<p style="color:#aaa;text-align:center">Nenhum participante ainda.</p>`; return; }
+  const mdl=['🥇','🥈','🥉'], cls=['primeiro','segundo','terceiro'];
+  el.innerHTML = ord.map((p,i) => `
+    <div class="ranking-row ${cls[i]||''}">
+      <span class="ranking-pos">${mdl[i]||(i+1)}</span>
+      <span class="ranking-nome">${p.nome}${p.isAdmin?' <span class="badge-admin">Admin</span>':''}</span>
+      <span class="ranking-pts">${p.pontos} pts</span>
+    </div>`).join('');
+
+  const tp = document.getElementById('todos-palpites');
+  const com = estado.jogos.filter(j => j.resultado);
+  if (!com.length) { tp.innerHTML=`<p style="color:#aaa;text-align:center;font-size:0.85rem">Sem resultados ainda.</p>`; return; }
+  tp.innerHTML = com.map(j => {
+    const pj = estado.palpites.filter(p => p.jogoId===j.id);
+    return `<div style="margin-bottom:14px">
+      <div style="font-weight:700;color:var(--azul);margin-bottom:6px;font-size:0.9rem">
+        ${j.mandante} ${j.resultado.casa}x${j.resultado.fora} ${j.visitante}</div>
+      ${pj.map(p => {
+        const par = estado.participantes.find(x => x.id===p.participanteId);
+        const pts = calcularPontos(p, j);
+        const cor = pts===3?'var(--verde)':pts===1?'#f57f17':'#e74c3c';
+        return `<div style="display:flex;justify-content:space-between;padding:6px 10px;background:#f9f9f9;border-radius:8px;margin-bottom:4px;font-size:0.83rem">
+          <span>${par?par.nome:'?'}</span>
+          <span style="font-weight:700">${p.golCasa}x${p.golFora}</span>
+          <span style="font-weight:800;color:${cor}">${pts}pt${pts!==1?'s':''}</span>
+        </div>`;}).join('')}
+    </div>`;
+  }).join('');
+}
+
+// ── PAGAMENTO ───────────────────────────────────────────────
+function renderPagamento() {
+  const u = estado.usuarioAtual;
+  const stEl = document.getElementById('status-pagamento-usuario');
+  const area = document.getElementById('area-pagamento');
+  if (u.pago) {
+    stEl.textContent = '✅ Confirmado'; stEl.style.color = 'var(--verde)';
+    area.innerHTML = `<div style="background:#e8f5e9;border-radius:10px;padding:16px;text-align:center;margin-top:12px">
+      <div style="font-size:2.5rem">✅</div>
+      <p style="font-weight:700;color:var(--verde);margin-top:8px">Pagamento confirmado!</p>
+      <p style="font-size:0.82rem;color:#666;margin-top:4px">Você está na disputa. Boa sorte! 🏆</p>
+    </div>`; return;
+  }
+  stEl.textContent = '⏳ Pendente'; stEl.style.color = '#e65100';
+
+  const cfg = estado.config;
+  if (cfg.publicKeyMP && cfg.accessTokenMP) {
+    area.innerHTML = `<div style="margin-top:12px">
+      <p style="font-size:0.85rem;color:#666;margin-bottom:12px">
+        Clique para gerar seu Pix de R$ 10,00 via Mercado Pago:</p>
+      <button class="btn btn-verde btn-block" onclick="gerarPagamentoMP()">
+        💚 Pagar R$ 10,00 via Pix (Mercado Pago)</button></div>`;
+  } else if (cfg.chavePix) {
+    // Gera QR Code via API gratuita
+    const pixPayload = gerarPixPayload(cfg.chavePix, cfg.nomePix, VALOR_BOLAO, u.nome);
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixPayload)}`;
+    area.innerHTML = `
+      <div class="pix-box">
+        <p style="font-weight:700;color:var(--azul);font-size:1rem">Pague R$ 10,00 via Pix</p>
+        <img src="${qrUrl}" style="width:180px;border-radius:8px;margin:12px auto;display:block;border:4px solid white"/>
+        <p style="font-size:0.82rem;color:#555;margin-bottom:4px">Chave: <strong>${cfg.chavePix}</strong></p>
+        <p style="font-size:0.82rem;color:#555;margin-bottom:12px">Recebedor: <strong>${cfg.nomePix}</strong></p>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+          <button class="btn btn-verde" onclick="copiarChavePix()">📋 Copiar Chave</button>
+          <button class="btn btn-azul" onclick="copiarPixPayload()">📋 Copiar Cód. Pix</button>
+        </div>
+        <p style="font-size:0.75rem;color:#888;margin-top:10px">
+          ⚠️ Após pagar, avise o admin para confirmar.</p>
+      </div>`;
+    window._pixPayload = pixPayload;
+  } else {
+    area.innerHTML = `<div style="background:#fff3e0;border-radius:10px;padding:14px;margin-top:12px;text-align:center;color:#e65100;font-size:0.85rem">
+      ⚠️ Pagamento não configurado pelo admin.</div>`;
+  }
+}
+
+// Gera payload Pix (BR Code) simplificado
+function gerarPixPayload(chave, nome, valor, descricao) {
+  function campo(id, val) {
+    const len = val.length.toString().padStart(2,'0');
+    return id + len + val;
+  }
+  const merchantAccInfo = campo('00','BR.GOV.BCB.PIX') + campo('01', chave);
+  const merchantInfo = campo('26', merchantAccInfo);
+  const nomeFormatado = (nome||'BOLAO COPA').substring(0,25).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const valorStr = valor.toFixed(2);
+  const descFormatada = (descricao||'BOLAO COPA').substring(0,25).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  let payload =
+    campo('00','01') +
+    merchantInfo +
+    campo('52','0000') +
+    campo('53','986') +
+    campo('54', valorStr) +
+    campo('58','BR') +
+    campo('59', nomeFormatado) +
+    campo('60','SAO PAULO') +
+    campo('62', campo('05', descFormatada.substring(0,25))) +
+    '6304';
+  const crc = calcCRC16(payload);
+  return payload + crc;
+}
+
+function calcCRC16(str) {
+  let crc = 0xFFFF;
+  for (let i = 0; i < str.length; i++) {
+    crc ^= str.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : crc << 1;
+    }
+  }
+  return ((crc & 0xFFFF).toString(16).toUpperCase().padStart(4,'0'));
+}
+
+function copiarChavePix() {
+  navigator.clipboard.writeText(estado.config.chavePix).then(() => toast('📋 Chave Pix copiada!'));
+}
+function copiarPixPayload() {
+  if (window._pixPayload) {
+    navigator.clipboard.writeText(window._pixPayload).then(() => toast('📋 Código Pix copiado!'));
+  }
+}
+function copiarPix() {
+  const c = document.getElementById('pix-codigo-texto').textContent;
+  navigator.clipboard.writeText(c).then(() => toast('📋 Código Pix copiado!'));
+}
+
+// ── MERCADO PAGO ─────────────────────────────────────────────
+async function gerarPagamentoMP() {
+  const u = estado.usuarioAtual;
+  toast('⏳ Gerando Pix...');
+  try {
+    const response = await fetch('https://api.mercadopago.com/v1/payments', {
+      method: 'POST',
+      headers: {
+        'Content-Type':'application/json',
+        'Authorization':`Bearer ${estado.config.accessTokenMP}`,
+        'X-Idempotency-Key':`bolao-${u.id}-${Date.now()}`
+      },
+      body: JSON.stringify({
+        transaction_amount: VALOR_BOLAO,
+        description: `Bolão Copa 2026 - ${u.nome}`,
+        payment_method_id: 'pix',
+        payer: {
+          email:`${u.nome.toLowerCase().replace(/\s/g,'')}.bolao@email.com`,
+          first_name: u.nome.split(' ')[0],
+          last_name: u.nome.split(' ').slice(1).join(' ')||'Participante',
+          identification: { type:'CPF', number:'00000000000' }
+        }
+      })
+    });
+    const data = await response.json();
+    if (data.point_of_interaction?.transaction_data) {
+      const tx = data.point_of_interaction.transaction_data;
+      estado.pagamentos.push({
+        participanteId:u.id, valor:VALOR_BOLAO,
+        metodo:'mp_pix', status:'pending',
+        paymentId:data.id, timestamp:Date.now()
+      });
+      salvarEstado();
+      document.getElementById('pix-qr-img').src = `data:image/png;base64,${tx.qr_code_base64}`;
+      document.getElementById('pix-codigo-texto').textContent = tx.qr_code;
+      document.getElementById('pix-instrucao').textContent = `ID: ${data.id} · Válido 30min`;
+      abrirModal('modal-pix');
+      verificarPagamentoMP(data.id, u.id);
+    } else { throw new Error(data.message||'Erro MP'); }
+  } catch(err) { toast('❌ Erro MP: '+err.message); }
+}
+
+async function verificarPagamentoMP(paymentId, userId) {
+  const iv = setInterval(async () => {
+    try {
+      const r = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`,
+        { headers:{ 'Authorization':`Bearer ${estado.config.accessTokenMP}` }});
+      const d = await r.json();
+      if (d.status==='approved') {
+        clearInterval(iv);
+        const pg = estado.pagamentos.find(x => x.paymentId===paymentId);
+        if (pg) pg.status = 'approved';
+        const usr = estado.participantes.find(x => x.id===userId);
+        if (usr) { usr.pago = true; atualizarPremios(); }
+        salvarEstado(); fecharModal('modal-pix');
+        toast('✅ Pix confirmado! Boa sorte! 🏆'); renderTudo();
+      }
+    } catch(e){}
+  }, 5000);
+  setTimeout(()=>clearInterval(iv), 30*60*1000);
+}
+
+function atualizarPremios() {
+  const pagos = estado.participantes.filter(p => p.pago).length;
+  const total = pagos * VALOR_BOLAO;
+  const abertos = estado.jogos.filter(j => j.status==='aberto');
+  if (abertos.length > 0 && abertos[0].premioProprio === 0) {
+    abertos[0].premioProprio = total;
+  }
+  renderPremioTotal();
+}
+
+// ── ADMIN ───────────────────────────────────────────────────
+function abrirModalResultado() {
+  const sel = document.getElementById('select-jogo-resultado');
+  sel.innerHTML = estado.jogos.filter(j=>j.status!=='encerrado')
+    .map(j=>`<option value="${j.id}">${j.mandante} vs ${j.visitante} (${j.data})</option>`).join('');
+  abrirModal('modal-resultado');
+}
+
+function registrarResultado() {
+  const jogoId = parseInt(document.getElementById('select-jogo-resultado').value);
+  const gc = parseInt(document.getElementById('gol-casa').value);
+  const gf = parseInt(document.getElementById('gol-fora').value);
+  const jogo = estado.jogos.find(j=>j.id===jogoId);
+  jogo.resultado = { casa:gc, fora:gf };
+  jogo.status = 'encerrado';
+
+  const vencedores = estado.palpites.filter(p => p.jogoId===jogoId && calcularPontos(p,jogo)===3);
+  if (vencedores.length === 0) {
+    const prox = estado.jogos.find(j=>j.status==='aberto');
+    if (prox) {
+      prox.premioProprio += jogo.premioProprio;
+      prox.acumulado = true;
+      toast(`🔥 Ninguém acertou! R$ ${jogo.premioProprio.toFixed(2).replace('.',',')} acumulado!`);
+    } else {
+      toast('🔥 Sem vencedores! Prêmio vai para o maior pontuador geral.');
+    }
+  } else {
+    toast(`🏆 ${vencedores.length} ganhador(es) encontrado(s)!`);
+  }
+  salvarEstado(); fecharModal('modal-resultado'); renderTudo();
+}
+
+function abrirModalConfirmarPagamento() {
+  const el = document.getElementById('lista-confirmar-pag');
+  const pd = estado.participantes.filter(p=>!p.pago);
+  el.innerHTML = pd.length===0
+    ? `<p style="color:var(--verde);font-weight:700;text-align:center">✅ Todos pagaram!</p>`
+    : pd.map(p=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:#f9f9f9;border-radius:10px;margin-bottom:8px">
+          <div><div style="font-weight:700">${p.nome}</div><div style="font-size:0.78rem;color:#888">${p.tel||'sem tel'}</div></div>
+          <button class="btn btn-verde" style="padding:7px 14px;font-size:0.82rem"
+            onclick="confirmarPagtoManual('${p.id}')">✅ Confirmar</button>
+        </div>`).join('');
+  abrirModal('modal-confirmar-pag');
+}
+
+function confirmarPagtoManual(id) {
+  const p = estado.participantes.find(x=>x.id===id);
+  if (p) {
+    p.pago = true;
+    estado.pagamentos.push({ participanteId:id, valor:VALOR_BOLAO, metodo:'manual', status:'approved', timestamp:Date.now() });
+    atualizarPremios();
+    salvarEstado(); abrirModalConfirmarPagamento(); renderTudo();
+    toast(`✅ Pagamento de ${p.nome} confirmado!`);
+  }
+}
+
+function abrirModalAdicionarParticipante() { abrirModal('modal-add-participante'); }
+
+function adicionarParticipante() {
+  const nome  = document.getElementById('add-nome').value.trim();
+  const tel   = document.getElementById('add-tel').value.trim();
+  const senha = document.getElementById('add-senha').value.trim();
+  if (!nome||!senha) { toast('⚠️ Preencha nome e senha!'); return; }
+  if (estado.participantes.length>=MAX_PARTICIPANTES) { toast('❌ Limite de 15!'); return; }
+  if (estado.participantes.find(p=>p.nome.toLowerCase()===nome.toLowerCase())) { toast('⚠️ Nome já existe!'); return; }
+  estado.participantes.push({ id:gerarId(), nome, tel, senha, pago:false, pontos:0, isAdmin:false });
+  salvarEstado(); fecharModal('modal-add-participante'); renderParticipantes();
+  toast(`✅ ${nome} adicionado(a)!`);
+  ['add-nome','add-tel','add-senha'].forEach(id=>document.getElementById(id).value='');
+}
+
+function abrirModalConfig() {
+  document.getElementById('cfg-public-key').value   = estado.config.publicKeyMP||'';
+  document.getElementById('cfg-access-token').value = estado.config.accessTokenMP||'';
+  document.getElementById('cfg-chave-pix').value    = estado.config.chavePix||'';
+  document.getElementById('cfg-nome-pix').value     = estado.config.nomePix||'';
+  document.getElementById('cfg-senha-admin').value  = '';
+  abrirModal('modal-config');
+}
+function salvarConfig() {
+  estado.config.publicKeyMP   = document.getElementById('cfg-public-key').value.trim();
+  estado.config.accessTokenMP = document.getElementById('cfg-access-token').value.trim();
+  estado.config.chavePix      = document.getElementById('cfg-chave-pix').value.trim();
+  estado.config.nomePix       = document.getElementById('cfg-nome-pix').value.trim();
+  const ns = document.getElementById('cfg-senha-admin').value.trim();
+  if (ns.length>=4) estado.config.senhaAdmin = ns;
+  salvarEstado(); fecharModal('modal-config'); toast('⚙️ Configurações salvas!'); renderPagamento();
+}
+
+function renderAdmin() {
+  const pagos = estado.participantes.filter(p=>p.pago).length;
+  const total = pagos * VALOR_BOLAO;
+  const premio = estado.jogos.reduce((s,j)=>s+j.premioProprio,0);
+  document.getElementById('resumo-financeiro').innerHTML = `
+    <div class="info-row"><span class="info-label">Participantes pagos</span><span class="info-value">${pagos}/${estado.participantes.length}</span></div>
+    <div class="info-row"><span class="info-label">Pendentes</span><span class="info-value" style="color:#e65100">${estado.participantes.filter(p=>!p.pago).length}</span></div>
+    <div class="info-row"><span class="info-label">Total arrecadado</span><span class="info-value">R$ ${total.toFixed(2).replace('.',',')}</span></div>
+    <div class="info-row"><span class="info-label">Prêmio acumulado</span><span class="info-value" style="color:var(--verde)">R$ ${premio.toFixed(2).replace('.',',')}</span></div>
+    <div class="info-row"><span class="info-label">Chave Pix</span><span class="info-value">${estado.config.chavePix||'Não configurada'}</span></div>`;
+}
+
+function exportarDados() {
+  const d = {
+    participantes: estado.participantes.map(p=>({nome:p.nome,tel:p.tel,pago:p.pago,pontos:p.pontos})),
+    palpites: estado.palpites, jogos: estado.jogos, pagamentos: estado.pagamentos,
+    exportadoEm: new Date().toLocaleString('pt-BR')
+  };
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:'application/json'}));
+  a.download = `bolao_copa2026_${Date.now()}.json`; a.click();
+  toast('📤 Dados exportados!');
+}
+
+// ── PARTICIPANTES ───────────────────────────────────────────
+function renderParticipantes() {
+  const qtd = estado.participantes.length;
+  document.getElementById('vagas-texto').textContent = `${qtd}/${MAX_PARTICIPANTES} participantes`;
+  document.getElementById('vagas-livres').textContent = `${MAX_PARTICIPANTES-qtd} vagas livres`;
+  document.getElementById('vagas-fill').style.width = ((qtd/MAX_PARTICIPANTES)*100)+'%';
+  const el = document.getElementById('lista-participantes');
+  el.innerHTML = !qtd ? `<p style="color:#aaa;text-align:center">Nenhum participante.</p>`
+    : estado.participantes.map(p=>`
+      <div class="participante-row">
+        <div>
+          <span class="participante-nome">${p.nome}</span>
+          ${p.isAdmin?' <span class="badge-admin">Admin</span>':''}
+          ${p.tel?`<div style="font-size:0.75rem;color:#aaa">${p.tel}</div>`:''}
+        </div>
+        <span class="${p.pago?'badge-pago':'badge-pendente'}">${p.pago?'✅ Pago':'⏳ Pendente'}</span>
+      </div>`).join('');
+}
+
+// ── UTILITÁRIOS ─────────────────────────────────────────────
+function gerarId() { return Math.random().toString(36).substr(2,9); }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+function abrirModal(id)  { document.getElementById(id).classList.add('open'); }
+function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); });
+});
+
+// ── INIT ─────────────────────────────────────────────────────
+carregarEstado();
+document.getElementById('select-jogo-resultado').innerHTML =
+  estado.jogos.map(j=>`<option value="${j.id}">${j.mandante} vs ${j.visitante}</option>`).join('');
+</script>
+</body>
+</html>
